@@ -1,0 +1,213 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace BA2D
+{
+    class BA2D
+    {
+        //A solution to a ROSALIND bioinformatics problem.
+        //Problem Title: Implement GreedyMotifSearch
+        //Rosalind ID: BA2D
+        //URL: http://rosalind.info/problems/ba2d/
+        static void Main(string[] args)
+        {
+            string kmer(string text, int i, int k)
+            {
+                //substring of text from i-th position for the next k letters
+                return text.Substring(i, k);
+            }
+            List<string> Lwindows(string text, int L)
+            {
+                //list of all L-windows in text
+                List<string> windows = new List<string>();
+                for (int i = 0; i < text.Length - L + 1; i++)
+                {
+                    windows.Add(kmer(text, i, L));
+                }
+                return windows;
+
+            }
+
+            double probability(string window, double[][] profile)
+            {
+                //probability of kmer in string according to profile matrix
+                double prob = 1;
+                for (int i = 0; i < window.Length; i++)
+                {
+                    if (window[i] == 'A')
+                        prob = prob * profile[0][i];
+                    else
+                    {
+                        if (window[i] == 'C')
+                            prob = prob * profile[1][i];
+                        else
+                        {
+                            if (window[i] == 'G')
+                                prob = prob * profile[2][i];
+                            else if (window[i] == 'T')
+                                prob = prob * profile[3][i];
+                        }
+                    }
+                }
+                return prob;
+            }
+
+            string mostProbkmerinText(string text, int k, double[][] profile)
+            {
+                Dictionary<string, double> d = new Dictionary<string, double>();
+                foreach (string window in Lwindows(text, k))
+                {
+                    d[window] = probability(window, profile);
+                }
+                double maxcount = 0;
+                foreach (string key in d.Keys)
+                {
+                    if (d[key] > maxcount)
+                    {
+                        maxcount = d[key];
+                    }
+                }
+                List<string> keys = new List<string>();
+                foreach (string key in d.Keys)
+                {
+                    if (d[key] == maxcount)
+                    {
+                        keys.Add(key);
+                    }
+                }
+                return keys[0];
+            }
+
+            int count(List<string> motifs,int nucl,int i)
+            {
+                //compute count for each nucleotide of i-th column
+                char[] col = new char[motifs.Count];
+                for (int j = 0; j < motifs.Count; j++)
+                {
+                    col[j] = motifs[j][i];
+                }
+                int num = 0;
+                if (nucl == 0)
+                {
+                    foreach (char n in col)
+                    {
+                        if (n == 'A')
+                            num = num + 1;
+                    }
+                }
+                if(nucl == 1)
+                {
+                    foreach (char n in col)
+                    {
+                        if (n == 'C')
+                            num = num + 1;
+                    }
+                }
+                if (nucl == 2)
+                {
+                    foreach (char n in col)
+                    {
+                        if (n == 'G')
+                            num = num + 1;
+                    }
+                }
+                if (nucl == 3)
+                {
+                    foreach (char n in col)
+                    {
+                        if (n == 'T')
+                            num = num + 1;
+                    }
+                }
+                return num;
+
+
+            }
+
+            int capitalLetter(List<string> motifs, int i)
+            {
+                //find a capital letter of i-th column
+                int[] counts = new int[4];
+                for (int nucl = 0; nucl < 4; nucl++)
+                {
+                    counts[nucl] = count(motifs, nucl, i);
+                }
+                int max = 0;
+                for (int nucl = 0; nucl < 4; nucl++)
+                {
+                    if (counts[nucl] > max)
+                        max = counts[nucl];
+                }
+                return Array.IndexOf(counts, max);
+            }
+
+            int score(List<string> motifs)
+            {
+                int sc = 0;
+                for (int i = 0; i < motifs[0].Length; i++)
+                {
+                    sc = sc + (motifs.Count - count(motifs, capitalLetter(motifs, i), i));
+                }
+                return sc;
+            }
+
+            double[][] profileMatrix(List<string> motifs,int k)
+            {
+                double[][] matrix = new double[4][];
+                for (int nucl = 0; nucl < 4; nucl++)
+                {
+                    matrix[nucl] = new double[k];
+                }
+                for (int i = 0; i < k; i++)
+                {
+                    for (int nucl = 0; nucl < 4; nucl++)
+                    {
+                        matrix[nucl][i]=(double)count(motifs, nucl, i) /(double) motifs.Count;
+                    }
+                }
+                return matrix;
+            }
+            
+            List<string> greedyMotifSearch(string[] dna,int k,int t)
+            {
+                List<string> BestMotifs = new List<string>();
+                foreach (string s in dna)
+                {
+                    BestMotifs.Add(kmer(s, 0, k));
+                }
+                foreach (string motif in Lwindows(dna[0],k))
+                {
+                    List<string> motifs = new List<string>();
+                    motifs.Add(motif);
+                    for (int i = 1 ; i < t; i++)
+                    {
+                        double[][] profile = profileMatrix(motifs, k);
+                        motifs.Add(mostProbkmerinText(dna[i], k, profile));
+                    }
+                    if (score(motifs) < score(BestMotifs))
+                    {
+                        BestMotifs = motifs;
+                    }
+                }
+                return BestMotifs;
+            }
+
+            //string x = "3 5\nGGCGTTCAGGCA\nAAGAATCAGTCA\nCAAGGAGTTCGC\nCACGTCAATCAC\nCAATAATATTCG";
+            string x="12 25\nGATGGACCGGGCCATACATGGTGACACGCATCAGAAAGCTGTCCCCGTGCCTTATGCGCTGTCTGTTAGTACATCTCTCTCAATGGCCGTATTTTCAGAACAAGTATCACTTGGATCATCATCTACTCGACGGAGGGCGCGCAAGTGGGTATCTCG\nTAAAAAGGTATAAGGGAGTCATATCCGCAGTCCTAGTGACCTTTCCCGGCCCTAGCAGTGCTCCGATAGCCCATGGATGAGACGTAACTCGGCTACTGTTTGTGACTCAAGATAGTTGCCGTCGATATCTCGGATTCTGCTTATCGTGTTACGAGC\nAACCACGAGTACCTCTGTCGTGGTCCTTCACCAGGACTCGAAATTTGGCTCACGCCCAACGCCAAGATTACGTCGATCGTTCCTGTTGATATCTCGCCGCATATCAGGTTTATACTGATCGGCTCAGTGATTGTTAATCATCGGCGCGGGTTGTCA\nTGTCATGTGCGGATACAGTGGTGACACCAGGTCACCTCCGACCTAAAAGCGTTCAAGGTATGGCCCGAAGAGGTAGGTATCTCTTGTGCCCGCTGCTGCTATCACTCCCTGTGAGCCCCGACACGAATGTTAAACCAGTTTATATTCGCTCGTCAT\nAACCTAAACCCTTGCTTCCCACCATCCCTGCGAAGCAACCTTATCCGTAGTTCAGTCGCGCTGAACTCGGAAAGTGCGCTCACGAGATTCTAACTTACACTTGTTTAAGTACCACGTCCGGTGGATATCGCTGGCGTTGAAGGATAGTTCTGGTTA\nGTGCCCGATATGCCCGTCAGGGTTGAAGTCTGGGAAGTCGTTATCCCAAACGAAATACCCCGTTCGCAGGCGTGATGTATATCCTGATTAGTACCGCGTATAATATTAGTTTCGCACAGGAGCGTGCTTGTTTTGGGTCATGGATTGGGTACAGCA\nTAGTCTTCGAGGCATCTACCTGCGACCGAGCTTGCGATCCAAAAGCATACCCATGAAGTTTGCAAATCTTTCTTAGAGCTACAGGTAGATATCCCTGGGCCGGTAACTAGTAATATGTACAGTTTAGTTGTCCTGTACAATACTGATTGGAGTCAG\nAGGAGACGTGTTTGGTAGGCGCTCGACCCTTACCCCCCTATCTCGACTGGCATTGGACGTCCTCAGACTGGTGGATTTGACCTAGTGGTTATCACGCACATGGGAGAACCCGGTCAGAATACATCCTGTTACAGTCAGACGCCGGGTCATTCGCAA\nTGTGGGGATCGTCTGATTCATCGACGTCATGGAAACGGGGACGGGCCAGTGGTTATCCCATGCTGCCTTTTAGGAATTCTAGGAGGCGTTCCTAAATAGCTCGCCCGACGATATCCTACTTGATTGTGGCGGTATACCTTGCTGAACCTCGCAGTA\nCGCAGTGCACTAGTGGCTATCGCCTTTCTATCCCTGAGGCGTTTGCGTTATAAGATCACTCTGTCGGTGTGAAACCACTGAGTCACACTGACCGGTCGACTGGCCCGTCATATGCAAGTTGAAACGCTTACTGCCGGGTATCGCTCTAAGCTCGAC\nTACTCGTAACTTCAAAATCTCGTAGGGTCTGCAGAGTAAGAATCCCGGATACTTCAACATTATCGATTCGTCAAGACGTGCGGAGTGGATATCCCTTATTCCTATACGTCACAAGCCGCGGTCAAGTCGCTTACGCACGGTAGAGCGGGAAACCCT\nGCTCTAGTACGCCACAGTGCCAGTACATGACCTCACGAGCCGCCACTTACGTTGATATGTTATAAATCACTAGTTTCGTTGGTACAAACAATAAGTGAGAAGCAATGAGCAACTTATCTCATAAAAAGTGTGGTCGTTATCACACATGACATAAAC\nGAGACGGTCGTAGAAATTTGCGCTTGCTCGTATCTCAGTATCCTTCAAAGATTGAACCGGATCGCGGCGGCTAATATTGAAATCCTTAGACTTAACGTTGGTATCACTTTAGAATTTCTGACTTGAGGGTAGTGACTAGACAATCATGATGGAAGA\nGATCGGTGGCAGTTGAATTAAGACTAGTTATCCCCTGCTTACACTTTTTCCGCCCGGACACGTGTGACGGTAGTTGATATCTCTCAAGTATCCCGACTTCACGTACGATGCCACCCATCTCCGGCAAACACACTTCTATAATATCGTGGAGCCGAA\nGTAGGTATCACCAGAGTTCTCTCGGTATGTGGCGCTAAAACCTCTTAGAGTATGAAGGGTGAAGACCAAGCTCATACCACCCCTATATAGGGCTAATTAATTCCACATCCAGGCAAGATGTCACCCTACAGGTCGCTCACTTGTGGAGAACATCAC\nGTGGCTATCGCTGTGATCCGTCACACAAAATCAACTTTGTAGTATTTTGGGTAGTCGGGATAACGCGTGGTCTAAGGTGAGCTGCCTTTGATCCGTTGGGTGGCTACCTTGCAAGTTACCGGCTTGTCACTAGATATAACCGGAAGTCTCTGCAAA\nTGAGCAGACCCGACAAAGGCCATGACTTCAAAACCGGTTGTGCAGCGACAGGTACTTTAAGTACGGCACCATTAATATCGCTATACTTACGAGTTAGTGGGTATCTCATGCAAACAAACTGCTACTAGGAACTTAGACGAACTTACCAGGAGGATT\nAGTGATCTGAGCATAGTATACTGAGAACGTGTGTGTGACCCCTCCAGCGTCCCCGGCTACTGTTCCAGATCCTAACTAATTACTGCTAGCGATCTGGTCGATATCGCTACGGAACGAAGCCGTACAATCGCCCAGAAGCGGTTAGTCAAGGGCGTT\nCAAAATGGGAGTACTTCTCGTAGAATAATTCGTCTGTAATTCCTAGGTTCCATAGATAGGCCTCGATAGTGAAATTCCTTCATGCCCCGAGGTGGCGTTGATATCTCCTTTCTAAGCGGTACCCTTAAGAGTACTCGCGATGGGCTTATCCTCCTC\nGTTGGTATCACCCCCAATCCTCTTAGTTTACACTGTAAGATTAACGTCAGGGTGTTGTGGATGGCTTTTCTAATTTAGGTCCTCGGGATGCTCAGGTGTTACTATCGGACTGAGTGAATGTAAGTCCGGGTATCAGCCATGAAACCACTGGAGATC\nCCTCGGAAAACGTCGTAAGTGGTATCACAATCCACTAGTCACGGAGGGCGGTGAGTGTCTCGATGCTCAACCCCCAACCCTCAGATGAGGCTATCTGTAGGTATCACTTACGTCACTACGGGGAACAGCTCGCCTTAAGTGTAGGCTAGGTATATG\nGGCGGCTCCATCCGATGTGACGGATTTCATGAGGCACAAGCGCTTCACTCCCTATTTGGCTCGTGACAAAGTTCAACGGCTTTGCAGATATCCATGGTCGTTATCCCGGTGGTGAACCTACCGTCAAGTCTCTACAGTGCGCGAAGTGTCCCGGGC\nTACTAGTATAAGTTCCGAGCCAAATGGATGGCCCAGGCGCACTAGTGTTAGAAGGATTCGGGCTGTAGGTACATCAAGCTCGAATTTGTCCCACGTCATTCTGGGCCACCCGGACCACAGAAGACCTCTCTCTGTGCCGACGGTGTGGTTATCACG\nGTGGTTATCACCGGGATCGAATACAGATACGTCTGGTACATGCCTTGTCATTATTCATACGCCCCCTGGGCCAACAATCCTTTGTCAACCGCGGTCAAAAAGGTAACTAGGATCGGCTTGATCTCTAATTCCGGACTGTTCACCACGGGTCGACCG\nCATCACGCAATGCGAACGACTGAAGAAGGCAAGGACAGTTACGCAACCTATCATGCGTAGATCAAGGTAATCGGGACCGGTCTGGAATTTAGGAGTGTTGTTATCGCAACCTGCGATCATAACATCCTCTTATTGCCTATAAACCGACCCTGACCG";
+            string[] inlines = x.Split();
+            int k = int.Parse(inlines[0]);
+            int t = int.Parse(inlines[1]);
+            string[] dna = new string[inlines.Length-2];
+            for (int i = 2; i < inlines.Length; i++)
+            {
+                dna[i-2]=inlines[i];
+            }
+            List<string> res = greedyMotifSearch(dna,k,t);
+            foreach (string s in res)
+            {
+                Console.WriteLine(s + " ");
+            }
+
+        }
+}
+}
