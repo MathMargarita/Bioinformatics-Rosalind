@@ -6,9 +6,9 @@ namespace BA3C
     class BA3C
     {
         //A solution to a ROSALIND bioinformatics problem.
-        //Problem Title: Reconstruct a String from its Genome Path
-        //Rosalind ID: BA3B
-        //URL: http://rosalind.info/problems/ba3b/
+        //Problem Title: Construct the Overlap Graph of a Collection of k-mers
+        //Rosalind ID: BA3C
+        //URL: http://rosalind.info/problems/ba3c/
         static void Main(string[] args)
         {
             string prefix(string pattern)
@@ -45,7 +45,7 @@ namespace BA3C
                 {
                     if (adj[key].Count>0)
                     {
-                        Console.WriteLine(key + "->" + adj[key][0]);
+                        Console.WriteLine(key + " -> " + adj[key][0]);
                     }
                 }
             }
